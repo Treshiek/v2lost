@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest   # WinForms (net10.0-windows) needs Windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip project
+        shell: pwsh
+        run: |
+          # Put Lost_Found_v2.zip in the repo root. It extracts to FinalProject/
+          Expand-Archive -Path Lost_Found_v2.zip -DestinationPath . -Force
+          Get-ChildItem -Recurse -Filter *.slnx | Select-Object FullName
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Restore
+        run: dotnet restore FinalProject/FinalProject.slnx
+
+      - name: Build
+        run: dotnet build FinalProject/FinalProject.slnx --no-restore -c Release
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: FinalProject-Release
+          path: FinalProject/FinalProject/bin/Release/
